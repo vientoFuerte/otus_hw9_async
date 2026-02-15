@@ -39,10 +39,10 @@ jobs:
       - name: Check build
         run: |
           cd build
-          if [ -f "./bayan" ]; then
+          if [ -f "./async" ]; then
             echo "✅ Main program built successfully"
             # Пробуем запустить
-            ./bayan --help 2>/dev/null || ./bayan 2>/dev/null || echo "Program executed"
+            ./async --help 2>/dev/null || ./async 2>/dev/null || echo "Program executed"
           else
             echo "❌ Main program not built"
             exit 1
