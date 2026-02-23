@@ -1,5 +1,6 @@
 ﻿// main.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
 
+#include <atomic>
 #include <iostream>
 #include <fstream>
 #include <thread>
@@ -10,8 +11,8 @@
 
 std::string generateFilename()
 {
-    // Задержка чтобы имена файлов гарантированно отличались
-    std::this_thread::sleep_for(std::chrono::seconds(1));
+    //статический атомарный счётчик
+    static std::atomic<unsigned int> counter{0};
     // Получаем текущее время
     std::time_t now = std::time(nullptr);
     std::tm timeinfo;
@@ -25,6 +26,10 @@ std::string generateFilename()
     filename += std::to_string(timeinfo.tm_hour);
     filename += std::to_string(timeinfo.tm_min);
     filename += std::to_string(timeinfo.tm_sec);
+    
+    // Счетчик увеличивается каждом вызове, гарантируя уникальность имени.
+    filename += "_" + std::to_string(++counter);
+    
     filename += ".log";
 
     return filename;
@@ -92,5 +97,4 @@ int main()
 
     std::cout << "All threads have finished." << std::endl;
 }
-
 
