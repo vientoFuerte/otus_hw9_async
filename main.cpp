@@ -8,11 +8,14 @@
 #include <vector>
 #include <chrono>
 #include <iomanip>
+#include "async.h"
 
 std::string generateFilename()
 {
     //статический атомарный счётчик
     static std::atomic<unsigned int> counter{0};
+    // Задержка чтобы имена файлов гарантированно отличались
+    //std::this_thread::sleep_for(std::chrono::seconds(1));
     // Получаем текущее время
     std::time_t now = std::time(nullptr);
     std::tm timeinfo;
@@ -74,10 +77,10 @@ void write_to_file(const std::string& output_file, const std::string& log_data) 
 }
 
 
-int main()
+int main(int argc, char* argv[])
 {
-    const std::string output_file1 = "output1.txt";
-    const std::string output_file2 = "output2.txt";
+    const std::string output_file1 = generateFilename();
+    const std::string output_file2 = generateFilename();
 
     std::string log_data;
 
@@ -96,5 +99,34 @@ int main()
     file2.join();
 
     std::cout << "All threads have finished." << std::endl;
+    
+    //Демонстрационная часть
+    
+    size_t N = (argc == 2) ? std::atoi(argv[1]) : 0; // Получаем параметр из командной строки или устанавливаем его в 0 по умолчанию
+    
+    // Тестовые данные
+    std::vector<std::string> test_input = {
+        "cmd1", "cmd2", "cmd23", "cmd24","cmd25","{", "cmd3", "cmd4", "}",
+        "{", "cmd5", "cmd6", "{", "cmd7", "cmd8", "}", "cmd9", "}",
+        "{", "cmd10", "cmd11"
+    };
+    
+    //пока фиксируем N
+    N = 3;
+    
+    // Создаём два контекста
+    auto handle1 = async::connect(N);
+    auto handle2 = async::connect(N);    
+    
+    // Передаём команды обработчикам
+    async::receive(handle1, "cmd1\ncmd2\ncmd3\ncmd4\ncmd5\n", 25);  
+    async::receive(handle2, "cmd6\n{\ncmd7\ncmd8\n}\ncmd9\n", 28);
+    
+    // Завершаем оба контекста
+    async::disconnect(handle1);
+    async::disconnect(handle2);
+
+    std::cout << "Demo finished. Check generated log files." << std::endl;
+    
 }
 
