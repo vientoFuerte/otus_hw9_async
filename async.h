@@ -14,6 +14,7 @@ struct BulkContext {
 
     BulkContext(std::size_t size) : bulk_size(size) {}
 
+    void process(const std::string& line);
 };
 
 
