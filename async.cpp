@@ -70,6 +70,7 @@ void printBlock(const std::vector<std::string>& block, std::ostream& file) {
 }
 
 void print_block(const std::vector<std::string>& cmds) {
+    if(cmds.empty()) {return;}
     std::string filename = generateFilename();
     std::ofstream file(filename);
     if (!file.is_open())
@@ -120,22 +121,40 @@ void disconnect(BulkContext* ctx) {
 
 void BulkContext::process(const std::string& cmd)
 {
-    if (cmd.empty()) return;
+   if (cmd.empty()) return;
     
-    if (cmd == "{")
+   if (cmd == "{")
     {
-    
+        if(depth == 0)
+        {
+          print_block(commands);
+          commands.clear();
+        }
+        depth++;       
     }
     else if (cmd == "}")
     {
-    
+          depth--;
+          if(depth<0) {depth = 0;}
+          if(depth == 0)
+          {
+            print_block(commands);
+            commands.clear();
+          }
     }
-    
-    
-    std::cout<<cmd<<std::endl;
+    else {
+        commands.push_back(cmd);
+        if (depth == 0 && commands.size() == bulk_size)
+        {
+            print_block(commands);
+            commands.clear();
+        }
+
+    }
 }
 
 }  // namespace async
+
 
 
 
