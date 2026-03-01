@@ -69,6 +69,28 @@ void printBlock(const std::vector<std::string>& block, std::ostream& file) {
     }
 }
 
+void print_block(const std::vector<std::string>& cmds) {
+    std::string filename = generateFilename();
+    std::ofstream file(filename);
+    if (!file.is_open())
+    {
+        std::cerr << "Failed to open file." << std::endl;
+    }
+    std::cout << "\nbulk : ";
+    file << "bulk : ";
+    
+    for (size_t i = 0; i < cmds.size(); ++i) {
+        if (i > 0) {
+            std::cout << ", ";
+            file << ", ";
+        }
+        std::cout << cmds[i];
+        file << cmds[i];
+    }
+    // Файл закроется автоматически при выходе из функции (деструктор ofstream)
+    //file.close();
+}
+
 BulkContext* connect(std::size_t bulk) {
     auto* ctx = new BulkContext(bulk);
     return ctx;
@@ -114,6 +136,7 @@ void BulkContext::process(const std::string& cmd)
 }
 
 }  // namespace async
+
 
 
 
