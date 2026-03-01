@@ -10,46 +10,10 @@
 #include "async.h"
 
 
-void log_to_console(const std::string& log_data) {
-    std::cout << "Console log: " << log_data << std::endl;
-}
-
-void write_to_file(const std::string& output_file, const std::string& log_data) {
-    std::ofstream output_stream(output_file, std::ios::app); // Открываем файл в режиме добавления
-    if (!output_stream.is_open()) {
-        std::cerr << "Failed to open output file: " << output_file << std::endl;
-        return;
-    }
-    output_stream << "File log: " << log_data << std::endl;
-    output_stream.close();
-}
-
-
 int main(int argc, char* argv[])
 {
-    //const std::string output_file1 = generateFilename();
-    //const std::string output_file2 = generateFilename();
-
-    //std::string log_data;
-
-    // Создаем три потока
-    //std::thread log(log_to_console, log_data);
-    //std::thread file1(write_to_file, output_file1, log_data);
-    //std::thread file2(write_to_file, output_file2, log_data);
-
-    // Заполняем log_data с помощью std::cin
-    //std::cout << "Enter log data (or type 'exit' to finish): ";
-    //std::getline(std::cin, log_data);
-
-    // Ожидаем завершения всех потоков
-    //log.join();
-    //file1.join();
-    //file2.join();
-
-    //std::cout << "All threads have finished." << std::endl;
-    
+  
     //Демонстрационная часть
-    
     size_t N = (argc == 2) ? std::atoi(argv[1]) : 0; // Получаем параметр из командной строки или устанавливаем его в 0 по умолчанию
     
     // Тестовые данные
@@ -67,8 +31,11 @@ int main(int argc, char* argv[])
     auto ctx2 = async::connect(N);    
     
     // Передаём команды обработчикам
-    async::receive(ctx1, "cmd1\ncmd2\ncmd3\ncmd4\ncmd5\n", 25);  
-    async::receive(ctx2, "cmd6\n{\ncmd7\ncmd8\n}\ncmd9\n", 28);
+    const char testCmd1[] = "cmd1\ncmd2\ncmd3\ncmd4\ncmd5\n";
+    const char testCmd2[] = "cmd6\n{\ncmd7\ncmd8\n}\ncmd9\n";
+    //передаем строку без нулевого символа, инача может быть лишняя запятая.
+    async::receive(ctx1, testCmd1, sizeof(testCmd1)-1);  
+    async::receive(ctx2, testCmd2, sizeof(testCmd2)-1);
     
     // Завершаем оба контекста
     async::disconnect(ctx1);
@@ -77,4 +44,5 @@ int main(int argc, char* argv[])
     std::cout << "Demo finished. Check generated log files." << std::endl;
     
 }
+
 
