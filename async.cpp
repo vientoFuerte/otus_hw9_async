@@ -1,22 +1,57 @@
 #include "async.h"
+#include "thread_queue.h"
 #include <sstream>
 #include <string>
 #include <chrono>
 #include <atomic>
 
+//для удобной сборки в Visual Studio
+#ifdef WIN32
+#include <iomanip>
+#endif
+
 namespace async {
+
+std::mutex print_mutex;              // мьютекс для вывода в консоль
+
+thread_queue<std::string> log_queue;
+thread_queue<std::string> file_queue;
+
+std::thread log_thread;
+std::thread file_thread1;
+std::thread file_thread2;
+
+void logThreadFunction() {
+    std::string cmd;
+    while (log_queue.pop(cmd))
+    {
+        std::cout << cmd<<"\n";
+    }
+}
+
+void fileThreadFunction(int threadId) {
+    std::string cmd;
+    while (file_queue.pop(cmd))
+    {
+        std::cout << cmd << " file\n";
+    }
+}
 
 std::string generateFilename()
 {
     //статический атомарный счётчик
-    static std::atomic<unsigned int> counter{0};
-    // Задержка чтобы имена файлов гарантированно отличались
-    //std::this_thread::sleep_for(std::chrono::seconds(1));
+    static std::atomic<unsigned int> counter{ 0 };
+
+#ifdef WIN32
+    std::time_t now = std::time(nullptr);
+    std::tm timeinfo;
+    localtime_s( &timeinfo, &now);
+#else
     // Получаем текущее время
     std::time_t now = std::time(nullptr);
     std::tm timeinfo;
     localtime_r(&now, &timeinfo);
-
+#endif
     // Формируем имя файла
     std::string filename = "bulk";
     filename += std::to_string(timeinfo.tm_mday);
@@ -25,10 +60,10 @@ std::string generateFilename()
     filename += std::to_string(timeinfo.tm_hour);
     filename += std::to_string(timeinfo.tm_min);
     filename += std::to_string(timeinfo.tm_sec);
-    
+
     // Счетчик увеличивается каждом вызове, гарантируя уникальность имени.
     filename += "_" + std::to_string(++counter);
-    
+
     filename += ".log";
 
     return filename;
@@ -154,6 +189,7 @@ void BulkContext::process(const std::string& cmd)
 }
 
 }  // namespace async
+
 
 
 
