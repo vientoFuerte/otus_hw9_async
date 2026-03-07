@@ -4,6 +4,7 @@
 #include <string>
 #include <chrono>
 #include <atomic>
+#include <thread>
 
 //для удобной сборки в Visual Studio
 #ifdef WIN32
@@ -40,7 +41,7 @@ void fileThreadFunction(int threadId) {
 std::string generateFilename()
 {
     //статический атомарный счётчик
-    static std::atomic<unsigned int> counter{ 0 };
+    static std::atomic<unsigned int> counter {0};
 
 #ifdef WIN32
     std::time_t now = std::time(nullptr);
@@ -189,7 +190,6 @@ void BulkContext::process(const std::string& cmd)
 }
 
 }  // namespace async
-
 
 
 
