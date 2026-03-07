@@ -30,10 +30,10 @@ class thread_queue
 		{
 			std::unique_lock<std::mutex> lock(mutex_);
 			// ждем появления данных, пока очередь пустая - спим.
-			cv_.wait(lock, [] {return !queue_.empty() || done_; });
+			cv_.wait(lock, [this] {return !queue_.empty() || done_; });
 			if(queue_.empty()) {return false;}
 			value = queue_.front();
-			queue_.pop(value);
+			queue_.pop();
 			return true;
 		}
 		void stop()
@@ -45,7 +45,6 @@ class thread_queue
 		
 	
 };
-
 
 
 
