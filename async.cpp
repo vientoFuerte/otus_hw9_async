@@ -13,31 +13,38 @@
 
 namespace async {
 
-std::mutex print_mutex;              // мьютекс для вывода в консоль
+std::mutex console_mutex;              // мьютекс для вывода в консоль
+std::mutex file_mutex;                 // мьютекс для вывода в файл
 
-thread_queue<std::string> log_queue;
-thread_queue<std::string> file_queue;
+std::condition_variable console_cv;
+std::condition_variable file_cv;
+
+thread_queue<std::vector<std::string>> log_queue;
+thread_queue<std::vector<std::string>> file_queue;
 
 std::thread log_thread;
 std::thread file_thread1;
 std::thread file_thread2;
 
+//Функция для потока вывода в консоль
 void logThreadFunction() {
     std::string cmd;
-    while (log_queue.pop(cmd))
+   // while (log_queue.pop(cmd))
     {
         std::cout << cmd<<"\n";
     }
 }
 
+//Функция для потока вывода в файл
 void fileThreadFunction(int threadId) {
     std::string cmd;
-    while (file_queue.pop(cmd))
+   // while (file_queue.pop(cmd))
     {
-        std::cout << cmd << " file\n";
+        std::cout << cmd <<threadId<<"\n";
     }
 }
 
+//Функция формирования имени файла, статический счетчик исключает совпадение имен.
 std::string generateFilename()
 {
     //статический атомарный счётчик
@@ -70,42 +77,24 @@ std::string generateFilename()
     return filename;
 }
 
-std::string outputBlockStart(std::ofstream& file)
-{
-    std::string filename = generateFilename();
-    file.open(filename, std::ios::binary | std::ios::app);
-    if (!file.is_open())
-    {
-        std::cerr << "Failed to open file." << std::endl;
-    }
-    return filename;
-}
 
-void outputBlockStop(std::ofstream& file)
-{
-    if (file.is_open())
-    {
-        std::cout << "\n";
-        file.close();
-    }
-}
-
-
-void printBlock(const std::vector<std::string>& block, std::ostream& file) {
-    std::cout << "bulk : ";
-    file << "bulk : ";
+// вывод блока в консоль потоком log
+void print_block_to_console(const std::vector<std::string>& cmds) {
+    if(cmds.empty()) {return;}
+    std::lock_guard<std::mutex> lock(console_mutex);
     
-    for (size_t i = 0; i < block.size(); ++i) {
+    std::cout << "\nbulk : ";
+  
+    for (size_t i = 0; i < cmds.size(); ++i) {
         if (i > 0) {
             std::cout << ", ";
-            file << ", ";
         }
-        std::cout << block[i];
-        file << block[i];
-    }
-}
+        std::cout << cmds[i];
+    } 
+  }
 
-void print_block(const std::vector<std::string>& cmds) {
+// запись блока в файл файловым потоком
+void print_block_to_file(const std::vector<std::string>& cmds) {
     if(cmds.empty()) {return;}
     std::string filename = generateFilename();
     std::ofstream file(filename);
@@ -113,15 +102,13 @@ void print_block(const std::vector<std::string>& cmds) {
     {
         std::cerr << "Failed to open file." << std::endl;
     }
-    std::cout << "\nbulk : ";
+
     file << "bulk : ";
     
     for (size_t i = 0; i < cmds.size(); ++i) {
         if (i > 0) {
-            std::cout << ", ";
             file << ", ";
         }
-        std::cout << cmds[i];
         file << cmds[i];
     }
     // Файл закроется автоматически при выходе из функции (деструктор ofstream)
@@ -131,6 +118,25 @@ void print_block(const std::vector<std::string>& cmds) {
 BulkContext* connect(std::size_t bulk) {
     auto* ctx = new BulkContext(bulk);
     return ctx;
+}
+
+//добавляем сформированные блоки в очереди
+void add_block_to_queues(std::vector <std::string> block)
+{
+    // в очередь для консоли
+    {
+        std::lock_guard<std::mutex> lock(console_mutex);
+        log_queue.push(block);
+    }
+    console_cv.notify_one();
+    
+    //в очередь для файлов
+    {
+        std::lock_guard<std::mutex> lock(file_mutex);
+        file_queue.push(block);
+    }
+    file_cv.notify_one();
+
 }
 
 void receive(BulkContext* ctx, const char* data, std::size_t size) {
@@ -163,7 +169,7 @@ void BulkContext::process(const std::string& cmd)
     {
         if(depth == 0)
         {
-          print_block(commands);
+          add_block_to_queues(commands);
           commands.clear();
         }
         depth++;       
@@ -174,7 +180,7 @@ void BulkContext::process(const std::string& cmd)
           if(depth<0) {depth = 0;}
           if(depth == 0)
           {
-            print_block(commands);
+            add_block_to_queues(commands);
             commands.clear();
           }
     }
@@ -182,7 +188,7 @@ void BulkContext::process(const std::string& cmd)
         commands.push_back(cmd);
         if (depth == 0 && commands.size() == bulk_size)
         {
-            print_block(commands);
+            add_block_to_queues(commands);
             commands.clear();
         }
 
