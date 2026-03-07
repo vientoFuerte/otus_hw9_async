@@ -28,20 +28,16 @@ std::thread file_thread2;
 
 //Функция для потока вывода в консоль
 void logThreadFunction() {
-    std::string cmd;
-   // while (log_queue.pop(cmd))
-    {
-        std::cout << cmd<<"\n";
-    }
+    std::vector <std::string> output_block;
+    while(log_queue.pop(output_block))
+    {print_block_to_console(output_block);}
 }
 
 //Функция для потока вывода в файл
 void fileThreadFunction(int threadId) {
-    std::string cmd;
-   // while (file_queue.pop(cmd))
-    {
-        std::cout << cmd <<threadId<<"\n";
-    }
+    std::vector<std::string> output_block;
+    while(file_queue.pop(output_block))
+    {print_block_to_file(output_block);}
 }
 
 //Функция формирования имени файла, статический счетчик исключает совпадение имен.
@@ -196,6 +192,7 @@ void BulkContext::process(const std::string& cmd)
 }
 
 }  // namespace async
+
 
 
 
