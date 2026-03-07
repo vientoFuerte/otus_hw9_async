@@ -26,6 +26,9 @@ std::thread log_thread;
 std::thread file_thread1;
 std::thread file_thread2;
 
+bool threads_started = false;   // потоки запущены
+
+
 //Функция для потока вывода в консоль
 void logThreadFunction() {
     std::vector <std::string> output_block;
@@ -39,6 +42,29 @@ void fileThreadFunction(int threadId) {
     while(file_queue.pop(output_block))
     {print_block_to_file(output_block);}
 }
+
+void threads_start()
+{
+  if(!threads_started)
+  {
+    log_thread = std::thread(logThreadFunction);
+    file_thread1 = std::thread(logThreadFunction);
+    file_thread2 = std::thread(logThreadFunction); 
+    threads_started = true;  
+  }
+}
+
+void threads_stop()
+{
+  if(threads_started)
+  {
+    log_thread.join();
+    file_thread1.join();
+    file_thread2.join(); 
+    threads_started = false;
+  }
+}
+
 
 //Функция формирования имени файла, статический счетчик исключает совпадение имен.
 std::string generateFilename()
@@ -113,6 +139,7 @@ void print_block_to_file(const std::vector<std::string>& cmds) {
 
 BulkContext* connect(std::size_t bulk) {
     auto* ctx = new BulkContext(bulk);
+    threads_start();
     return ctx;
 }
 
@@ -155,6 +182,7 @@ void disconnect(BulkContext* ctx) {
     if (ctx) {
         delete ctx;
     }
+    threads_stop();
 }
 
 void BulkContext::process(const std::string& cmd)
@@ -192,7 +220,6 @@ void BulkContext::process(const std::string& cmd)
 }
 
 }  // namespace async
-
 
 
 
