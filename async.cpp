@@ -37,7 +37,7 @@ void logThreadFunction() {
 }
 
 //Функция для потока вывода в файл
-void fileThreadFunction(int threadId) {
+void fileThreadFunction() {
     std::vector<std::string> output_block;
     while(file_queue.pop(output_block))
     {print_block_to_file(output_block);}
@@ -48,8 +48,8 @@ void threads_start()
   if(!threads_started)
   {
     log_thread = std::thread(logThreadFunction);
-    file_thread1 = std::thread(logThreadFunction);
-    file_thread2 = std::thread(logThreadFunction); 
+    file_thread1 = std::thread(fileThreadFunction);
+    file_thread2 = std::thread(fileThreadFunction); 
     threads_started = true;  
   }
 }
@@ -58,6 +58,9 @@ void threads_stop()
 {
   if(threads_started)
   {
+    log_queue.stop();
+    file_queue.stop();
+  
     log_thread.join();
     file_thread1.join();
     file_thread2.join(); 
