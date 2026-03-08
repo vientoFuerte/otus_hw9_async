@@ -39,12 +39,19 @@ jobs:
       - name: Check build
         run: |
           cd build
-          if [ -f "./async" ]; then
+          if [ -f "./async_demo" ]; then
             echo "✅ Main program built successfully"
             # Пробуем запустить
             ./async --help 2>/dev/null || ./async 2>/dev/null || echo "Program executed"
           else
             echo "❌ Main program not built"
+            exit 1
+          fi
+          # Дополнительно проверяем наличие библиотеки
+          if [ -f "./libasync.so" ]; then
+            echo "✅ Library libasync.so built successfully"
+          else
+            echo "❌ Library libasync.so not built"
             exit 1
           fi
       
@@ -89,7 +96,8 @@ jobs:
           tag_name: v${{ github.run_number }}
           name: Release v${{ github.run_number }}
           files: |
-            build/async
+            build/async_demo
+            build/libasync.so
             build/*.deb
           draft: false
           prerelease: false
