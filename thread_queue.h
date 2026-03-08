@@ -25,7 +25,7 @@ class thread_queue
         std::unique_lock<std::mutex> lock(mutex_);
         queue_.push(value);
         cv_.notify_one();
-      }s
+      }
       //достать элемент из очереди, предварительно ее заблокировав
       bool pop(T& value)
       {
@@ -44,6 +44,7 @@ class thread_queue
         cv_.notify_all();
       }	
 };
+
 
 
 
